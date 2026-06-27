@@ -4,26 +4,32 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.catsgram.exception.ConditionsNotMetException;
 import ru.yandex.practicum.catsgram.exception.NotFoundException;
 import ru.yandex.practicum.catsgram.model.Post;
-import ru.yandex.practicum.catsgram.model.User;
+import ru.yandex.practicum.catsgram.model.SortOrder;
 
 import java.time.Instant;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 // Указываем, что класс PostService - является бином и его
 // нужно добавить в контекст приложения
 @Service
 public class PostService {
-    private final Map<Long, Post> posts = new HashMap<>();
     private final UserService userService;
+
+    private final Map<Long, Post> posts = new HashMap<>();
+    private final Comparator<Post> postDateComparator = Comparator.comparing(Post::getPostDate);
 
     public PostService(UserService userService) {
         this.userService = userService;
     }
 
-    public Collection<Post> findAll() {
-        return posts.values();
+    public Collection<Post> findAll(SortOrder sort, int from, int size) {
+        return posts.values()
+                .stream()
+                .sorted(sort.equals(SortOrder.ASCENDING) ?
+                        postDateComparator : postDateComparator.reversed())
+                .skip(from)
+                .limit(size)
+                .toList();
     }
 
     public Post create(Post post) {
@@ -31,7 +37,7 @@ public class PostService {
             throw new ConditionsNotMetException("Описание не может быть пустым");
         }
 
-        Long authorId = post.getAuthorId();
+        long authorId = post.getAuthorId();
         userService.findUserById(authorId)
                 .orElseThrow(() -> new ConditionsNotMetException("Автор с id = " + authorId + " не найден"));
 
@@ -63,5 +69,9 @@ public class PostService {
                 .max()
                 .orElse(0);
         return ++currentMaxId;
+    }
+
+    public Optional<Post> findById(long id) {
+        return Optional.ofNullable(posts.get(id));
     }
 }

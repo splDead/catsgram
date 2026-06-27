@@ -59,11 +59,6 @@ public class UserService {
             throw new ConditionsNotMetException("Email не может быть пустым");
         }
 
-        // TODO: добавить проверку имени, закоментировано для прохождения тестов
-//        if (user.getUsername() == null || user.getUsername().isBlank()) {
-//            throw new ConditionsNotMetException("Имя не может быть пустым");
-//        }
-
         if (user.getPassword() == null || user.getPassword().isBlank()) {
             throw new ConditionsNotMetException("Пароль не может быть пустым");
         }
@@ -84,7 +79,7 @@ public class UserService {
         return ++currentMaxId;
     }
 
-    public Optional<User> findUserById(Long id) {
+    public Optional<User> findUserById(long id) {
         return Optional.ofNullable(users.get(id));
     }
 }
