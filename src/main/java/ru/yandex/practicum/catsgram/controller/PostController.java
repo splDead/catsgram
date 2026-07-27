@@ -1,16 +1,22 @@
 package ru.yandex.practicum.catsgram.controller;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
+import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.catsgram.dto.NewPostRequest;
+import ru.yandex.practicum.catsgram.dto.PostDto;
+import ru.yandex.practicum.catsgram.dto.UpdatePostRequest;
 import ru.yandex.practicum.catsgram.exception.ParameterNotValidException;
-import ru.yandex.practicum.catsgram.model.Post;
 import ru.yandex.practicum.catsgram.model.SortOrder;
 import ru.yandex.practicum.catsgram.service.PostService;
 
 import java.util.Collection;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/posts")
+@Validated
 public class PostController {
     private final PostService postService;
 
@@ -19,37 +25,33 @@ public class PostController {
     }
 
     @GetMapping
-    public Collection<Post> findAll(@RequestParam(defaultValue = "desc") String sort,
-                                    @RequestParam(defaultValue = "0") int from,
-                                    @RequestParam(defaultValue = "10") int size
+    public Collection<PostDto> findAll(
+            @RequestParam(defaultValue = "descending") String sort,
+            @RequestParam(defaultValue = "0") @Min(value = 0, message = "Значение не может быть меньше 0") int from,
+            @RequestParam(defaultValue = "10") @Positive(message = "Значение должно быть больше 0") int size
     ) {
-        if ((SortOrder.from(sort) == null)) {
+        SortOrder order = SortOrder.from(sort);
+
+        if (order == null) {
             throw new ParameterNotValidException("sort", "Значение может быть asc или desc");
         }
 
-        if (size <= 0) {
-            throw new ParameterNotValidException("size", "Значение должно быть больше 0");
-        }
-
-        if (from < 0) {
-            throw new ParameterNotValidException("from", "Значение не может быть меньше 0");
-        }
-
-        return postService.findAll(SortOrder.from(sort), from, size);
+        return postService.findAll(order, from, size);
     }
 
     @GetMapping("/{postId}")
-    public Optional<Post> findById(@PathVariable long postId) {
+    @ResponseStatus(HttpStatus.OK)
+    public PostDto findById(@PathVariable long postId) {
         return postService.findById(postId);
     }
 
     @PostMapping
-    public Post create(@RequestBody Post post) {
-        return postService.create(post);
+    public PostDto create(@RequestBody NewPostRequest request) {
+        return postService.create(request);
     }
 
-    @PutMapping
-    public Post update(@RequestBody Post newPost) {
-        return postService.update(newPost);
+    @PutMapping("/{postId}")
+    public PostDto update(@PathVariable("postId") long postId, @RequestBody UpdatePostRequest request) {
+        return postService.update(postId, request);
     }
 }
